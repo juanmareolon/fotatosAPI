@@ -2,19 +2,21 @@ require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || '';
+const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || '';
+const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
+const USAR_BOT = Boolean(BOT_TOKEN && CHANNEL_ID);
 const TRIGGER = (process.env.TRIGGER || '/fotatos').toLowerCase();
 const GROUP_ID = process.env.WHATSAPP_GROUP_ID || ''; // opcional: limitar a un grupo
 const CHROMIUM_PATH = process.env.CHROMIUM_PATH || undefined;
 const MAX_BYTES = (parseInt(process.env.MAX_MB, 10) || 10) * 1024 * 1024;
-// Modo silencioso (por defecto activado): el bot nunca escribe ni reacciona en WhatsApp.
-// Todo el feedback queda en la consola. Poné SILENT=false en .env para desactivarlo.
 const SILENT = process.env.SILENT !== 'false';
 
-if (!WEBHOOK_URL) {
-  console.error('Falta DISCORD_WEBHOOK_URL en el archivo .env');
+if (!USAR_BOT && !WEBHOOK_URL) {
+  console.error('Falta configurar Discord en .env: DISCORD_BOT_TOKEN + DISCORD_CHANNEL_ID (o DISCORD_WEBHOOK_URL).');
   process.exit(1);
 }
+console.log(`Envío a Discord: ${USAR_BOT ? 'con el bot' : 'con webhook'}`);
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
@@ -64,12 +66,17 @@ async function enviarADiscord({ buffer, mimetype, filename, contenido }) {
     'payload_json',
     JSON.stringify({
       content: contenido,
-      allowed_mentions: { parse: [] }, 
+      allowed_mentions: { parse: [] },
     })
   );
   form.append('files[0]', new Blob([buffer], { type: mimetype }), filename);
 
-  const res = await fetch(`${WEBHOOK_URL}?wait=true`, { method: 'POST', body: form });
+  const url = USAR_BOT
+    ? `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages`
+    : `${WEBHOOK_URL}?wait=true`;
+  const headers = USAR_BOT ? { Authorization: `Bot ${BOT_TOKEN}` } : {};
+
+  const res = await fetch(url, { method: 'POST', headers, body: form });
   if (!res.ok) {
     const detalle = await res.text().catch(() => '');
     throw new Error(`Discord respondió ${res.status}: ${detalle}`);
