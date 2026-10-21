@@ -1,17 +1,19 @@
 {
   "name": "whatsapp-fotatos",
-  "version": "1.0.0",
-  "description": "Bot de WhatsApp que reenvía fotos y videos de un grupo a un canal de Discord por webhook",
+  "version": "2.0.0",
+  "description": "Bot de WhatsApp que reenvía fotos y videos de un grupo a un canal de Discord",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
+    "@whiskeysockets/baileys": "latest",
     "dotenv": "^16.4.5",
-    "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.26.0"
+    "pino": "^9.0.0",
+    "qrcode-terminal": "^0.12.0"
   }
 }
